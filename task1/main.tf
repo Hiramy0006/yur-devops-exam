@@ -26,13 +26,13 @@ provider "digitalocean" {
 }
 
 resource "digitalocean_vpc" "exam_vpc" {
-  name     = "yur-vpc-final-t1020"
+  name     = "yur-vpc-final-attempt-ok"
   region   = "fra1"
-  ip_range = "10.11.30.0/24" 
+  ip_range = "10.11.50.0/24" 
 }
 
 resource "digitalocean_firewall" "exam_fw" {
-  name = "yur-fw-final-t1020"
+  name = "yur-fw-final-attempt-ok"
 
   inbound_rule {
     protocol         = "tcp"
@@ -62,15 +62,17 @@ resource "digitalocean_firewall" "exam_fw" {
 }
 
 resource "digitalocean_droplet" "exam_node" {
-  name     = "yur-node-final-t1020"
+  name     = "yur-node-final-attempt-ok"
   size     = "s-2vcpu-4gb"
   image    = "ubuntu-24-04-x64"
   region   = "fra1"
   vpc_uuid = digitalocean_vpc.exam_vpc.id
+  # Твій SSH ключ додано сюди:
+  ssh_keys = ["c2:ba:9b:74:95:2b:f3:71:38:dd:7b:92:c1:07:bf:27"]
 }
 
 resource "digitalocean_spaces_bucket" "exam_bucket" {
-  name   = "yur-bucket-final-t1020"
+  name   = "yur-bucket-final-attempt-ok"
   region = "fra1"
 }
 
