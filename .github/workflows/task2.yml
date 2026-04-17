@@ -34,11 +34,9 @@ jobs:
           echo "[web]" > task2/inventory.ini
           echo "${{ github.event.inputs.target_host }} ansible_user=root ansible_ssh_private_key_file=~/.ssh/id_rsa" >> task2/inventory.ini
 
-      # Перевірка без встановлення (--check)
       - name: Validate playbook (dry-run)
         run: |
           ansible-playbook -i task2/inventory.ini task2/playbook.yml --check --diff
-        continue-on-error: false
 
   deploy:
     runs-on: ubuntu-latest
