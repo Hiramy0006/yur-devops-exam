@@ -8,7 +8,6 @@
     k8s_user: "root"
 
   tasks:
-    # --- Залежності ---
     - name: Update apt cache
       apt:
         update_cache: yes
@@ -26,7 +25,6 @@
           - wget
         state: present
 
-    # --- Docker ---
     - name: Install Docker
       apt:
         name: docker.io
@@ -37,8 +35,8 @@
         name: docker
         state: started
         enabled: yes
+      when: not ansible_check_mode
 
-    # --- kubectl ---
     - name: Download kubectl
       get_url:
         url: "https://dl.k8s.io/release/{{ lookup('url', 'https://dl.k8s.io/release/stable.txt') }}/bin/linux/amd64/kubectl"
@@ -49,13 +47,13 @@
       command: kubectl version --client
       register: kubectl_check
       changed_when: false
+      when: not ansible_check_mode
 
     - name: Fail if kubectl not working
       fail:
         msg: "kubectl не працює: {{ kubectl_check.stderr }}"
-      when: kubectl_check.rc != 0
+      when: not ansible_check_mode and kubectl_check.rc != 0
 
-    # --- Minikube ---
     - name: Download Minikube
       get_url:
         url: "https://storage.googleapis.com/minikube/releases/{{ minikube_version }}/minikube-linux-amd64"
@@ -70,7 +68,7 @@
     - name: Fail if minikube not found
       fail:
         msg: "Minikube не знайдено після завантаження"
-      when: not minikube_stat.stat.exists
+      when: not ansible_check_mode and not minikube_stat.stat.exists
 
     - name: Start Minikube with docker driver
       command: minikube start --driver=docker --force
@@ -78,6 +76,7 @@
         HOME: "/root"
       register: minikube_start
       changed_when: true
+      when: not ansible_check_mode
 
     - name: Verify minikube status
       command: minikube status
@@ -85,13 +84,13 @@
         HOME: "/root"
       register: minikube_status
       changed_when: false
+      when: not ansible_check_mode
 
     - name: Fail if minikube not running
       fail:
         msg: "Minikube не запустився: {{ minikube_status.stdout }}"
-      when: "'Running' not in minikube_status.stdout"
+      when: not ansible_check_mode and "'Running' not in minikube_status.stdout"
 
-    # --- Helm ---
     - name: Download Helm install script
       get_url:
         url: "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
@@ -102,23 +101,25 @@
       command: /tmp/get-helm-3.sh
       args:
         creates: /usr/local/bin/helm
+      when: not ansible_check_mode
 
     - name: Verify Helm
       command: helm version
       register: helm_check
       changed_when: false
+      when: not ansible_check_mode
 
     - name: Fail if Helm not working
       fail:
         msg: "Helm не працює: {{ helm_check.stderr }}"
-      when: helm_check.rc != 0
+      when: not ansible_check_mode and helm_check.rc != 0
 
-    # --- Proxy для доступу до Minikube dashboard ---
     - name: Enable Minikube dashboard addon
       command: minikube addons enable dashboard
       environment:
         HOME: "/root"
       changed_when: true
+      when: not ansible_check_mode
 
     - name: Create minikube proxy systemd service
       copy:
@@ -143,3 +144,4 @@
         enabled: yes
         state: started
         daemon_reload: yes
+      when: not ansible_check_mode
