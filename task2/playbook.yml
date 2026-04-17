@@ -1,20 +1,28 @@
----
-- name: Configure Droplet
-  hosts: web
-  become: yes
-  tasks:
-    - name: Update apt cache
-      apt:
-        update_cache: yes
-        cache_valid_time: 3600
+name: Task 2 - Ansible Config
 
-    - name: Install Docker
-      apt:
-        name: docker.io
-        state: present
+on:
+  workflow_dispatch:
 
-    - name: Start Docker
-      service:
-        name: docker
-        state: started
-        enabled: yes
+jobs:
+  ansible:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key and Run Ansible
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          # Створюємо папку для ключів
+          mkdir -p ~/.ssh
+          
+          # Записуємо ключ у файл
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          
+          # Додаємо сервер у відомі хости, щоб не було запиту "Are you sure you want to connect?"
+          ssh-keyscan -H 209.38.217.115 >> ~/.ssh/known_hosts
+          
+          # Запускаємо сам Ansible
+          ansible-playbook -i task2/inventory.ini task2/playbook.yml
