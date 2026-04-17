@@ -1,20 +1,145 @@
 ---
-- name: Configure Droplet
+- name: Install Kubernetes, Minikube, Helm
   hosts: web
   become: yes
+  vars:
+    minikube_version: "v1.33.1"
+    helm_version: "v3.15.1"
+    k8s_user: "root"
+
   tasks:
+    # --- Залежності ---
     - name: Update apt cache
       apt:
         update_cache: yes
         cache_valid_time: 3600
 
+    - name: Install dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - conntrack
+          - socat
+          - wget
+        state: present
+
+    # --- Docker ---
     - name: Install Docker
       apt:
         name: docker.io
         state: present
 
-    - name: Start Docker
+    - name: Start and enable Docker
       service:
         name: docker
         state: started
         enabled: yes
+
+    # --- kubectl ---
+    - name: Download kubectl
+      get_url:
+        url: "https://dl.k8s.io/release/{{ lookup('url', 'https://dl.k8s.io/release/stable.txt') }}/bin/linux/amd64/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: "0755"
+
+    - name: Verify kubectl
+      command: kubectl version --client
+      register: kubectl_check
+      changed_when: false
+
+    - name: Fail if kubectl not working
+      fail:
+        msg: "kubectl не працює: {{ kubectl_check.stderr }}"
+      when: kubectl_check.rc != 0
+
+    # --- Minikube ---
+    - name: Download Minikube
+      get_url:
+        url: "https://storage.googleapis.com/minikube/releases/{{ minikube_version }}/minikube-linux-amd64"
+        dest: /usr/local/bin/minikube
+        mode: "0755"
+
+    - name: Verify minikube binary exists
+      stat:
+        path: /usr/local/bin/minikube
+      register: minikube_stat
+
+    - name: Fail if minikube not found
+      fail:
+        msg: "Minikube не знайдено після завантаження"
+      when: not minikube_stat.stat.exists
+
+    - name: Start Minikube with docker driver
+      command: minikube start --driver=docker --force
+      environment:
+        HOME: "/root"
+      register: minikube_start
+      changed_when: true
+
+    - name: Verify minikube status
+      command: minikube status
+      environment:
+        HOME: "/root"
+      register: minikube_status
+      changed_when: false
+
+    - name: Fail if minikube not running
+      fail:
+        msg: "Minikube не запустився: {{ minikube_status.stdout }}"
+      when: "'Running' not in minikube_status.stdout"
+
+    # --- Helm ---
+    - name: Download Helm install script
+      get_url:
+        url: "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
+        dest: /tmp/get-helm-3.sh
+        mode: "0700"
+
+    - name: Install Helm
+      command: /tmp/get-helm-3.sh
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Verify Helm
+      command: helm version
+      register: helm_check
+      changed_when: false
+
+    - name: Fail if Helm not working
+      fail:
+        msg: "Helm не працює: {{ helm_check.stderr }}"
+      when: helm_check.rc != 0
+
+    # --- Proxy для доступу до Minikube dashboard ---
+    - name: Enable Minikube dashboard addon
+      command: minikube addons enable dashboard
+      environment:
+        HOME: "/root"
+      changed_when: true
+
+    - name: Create minikube proxy systemd service
+      copy:
+        dest: /etc/systemd/system/minikube-proxy.service
+        content: |
+          [Unit]
+          Description=Minikube kubectl proxy
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/local/bin/kubectl proxy --address='0.0.0.0' --port=8001 --accept-hosts='.*'
+          Restart=always
+          User=root
+          Environment=HOME=/root
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start minikube proxy service
+      systemd:
+        name: minikube-proxy
+        enabled: yes
+        state: started
+        daemon_reload: yes
