@@ -25,16 +25,14 @@ provider "digitalocean" {
   spaces_secret_key = var.spaces_secret_key
 }
 
-# Створюємо VPC з унікальним іменем для екзамену
 resource "digitalocean_vpc" "exam_vpc" {
-  name     = "yur-exam-vpc-unique"
+  name     = "yur-exam-vpc-v2"
   region   = "fra1"
-  ip_range = "10.11.12.0/24" # Змінив підмережу, щоб не перетиналася
+  ip_range = "10.11.13.0/24" 
 }
 
-# Firewall з унікальним іменем
 resource "digitalocean_firewall" "exam_fw" {
-  name = "yur-exam-firewall-unique"
+  name = "yur-exam-firewall-v2"
 
   inbound_rule {
     protocol         = "tcp"
@@ -63,20 +61,16 @@ resource "digitalocean_firewall" "exam_fw" {
   }
 }
 
-# Створюємо Droplet
 resource "digitalocean_droplet" "exam_node" {
-  name     = "yur-exam-node"
+  name     = "yur-exam-node-v2"
   size     = "s-2vcpu-4gb"
   image    = "ubuntu-24-04-x64"
   region   = "fra1"
   vpc_uuid = digitalocean_vpc.exam_vpc.id
-  # Якщо у тебе в DO вже доданий ключ, Terraform його підтягне, якщо ми вкажемо відбиток (fingerprint)
-  # Але для спрощення на екзамені просто створимо дроплет у цій VPC
 }
 
-# Створюємо окремий бакет для контенту (Завдання 1)
 resource "digitalocean_spaces_bucket" "exam_bucket" {
-  name   = "yur-exam-content-bucket"
+  name   = "yur-exam-bucket-v2"
   region = "fra1"
 }
 
