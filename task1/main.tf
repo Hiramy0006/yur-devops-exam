@@ -26,13 +26,13 @@ provider "digitalocean" {
 }
 
 resource "digitalocean_vpc" "exam_vpc" {
-  name     = "yur-final-vpc-17-04"
+  name     = "yur-vpc-ultra-unique-x1"
   region   = "fra1"
-  ip_range = "10.11.15.0/24" 
+  ip_range = "10.11.20.0/24" 
 }
 
 resource "digitalocean_firewall" "exam_fw" {
-  name = "yur-final-fw-17-04"
+  name = "yur-fw-ultra-unique-x1"
 
   inbound_rule {
     protocol         = "tcp"
@@ -62,7 +62,7 @@ resource "digitalocean_firewall" "exam_fw" {
 }
 
 resource "digitalocean_droplet" "exam_node" {
-  name     = "yur-final-node-17-04"
+  name     = "yur-node-ultra-unique-x1"
   size     = "s-2vcpu-4gb"
   image    = "ubuntu-24-04-x64"
   region   = "fra1"
@@ -70,7 +70,7 @@ resource "digitalocean_droplet" "exam_node" {
 }
 
 resource "digitalocean_spaces_bucket" "exam_bucket" {
-  name   = "yur-final-bucket-17-04"
+  name   = "yur-bucket-ultra-unique-x1"
   region = "fra1"
 }
 
