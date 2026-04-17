@@ -6,7 +6,7 @@ on:
       target_host:
         description: "IP адреса ВМ для встановлення"
         required: true
-        default: "209.38.217.115"
+        default: "138.68.77.178"
 
 jobs:
   validate:
